@@ -15,6 +15,9 @@ import passport from 'passport';
 import './passport/passportStrategies.js';
 import config from './config.js';
 import { errorMiddleware } from './middlewares/errors.middleware.js';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSetup } from './swaggerSpecs.js';
+import logger from './utils/winston.js';
 
 const app = express();
 
@@ -45,22 +48,23 @@ app.use('/api/products', ProductsRouter.getRouter());
 app.use('/api/users', UsersRouter.getRouter());
 app.use('/views', ViewsRouter.getRouter());
 app.use('/api/loggerTest', LoggerTestRouter.getRouter());
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSetup));
 
 app.use(errorMiddleware);
 
 const httpServer = app.listen(config.PORT, () => {
-    console.log(`Servidor escuchando al puerto ${config.PORT}.`)
+    logger.info(`Servidor escuchando al puerto ${config.PORT}.`)
 });
 
 const socketServer = new Server(httpServer);
 
 socketServer.on('connection', (socket) => {
-    console.log(`Usuario conectado con el ID ${socket.id}.`);
+    logger.info(`Usuario conectado con el ID ${socket.id}.`);
     socket.emit('fetchProducts');
     socket.on('updateProducts', () => {
         socket.emit('fetchProducts')
     });
     socket.on('disconnect', () => {
-        console.log(`Usuario con ID ${socket.id} se ha desconectado.`)
+        logger.info(`Usuario con ID ${socket.id} se ha desconectado.`)
     })
 })
